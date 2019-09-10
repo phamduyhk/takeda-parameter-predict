@@ -21,7 +21,9 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LassoCV
 from sklearn.linear_model import RidgeCV
 from sklearn.linear_model import ElasticNetCV
-
+from sklearn.ensemble import AdaBoostRegressor
+from sklearn.metrics import accuracy_score
+from sklearn.datasets import make_regression
 import xgboost as xgb
 # import lightgbm as lgb
 
@@ -42,18 +44,16 @@ class Trainer(object):
         self.__pre_process = PreProcessor()
         self.__train, self.__y_train = self.__pre_process.get_train_data()
 
-        # features = train_data.drop(columns=['keiyaku_pr'])
-        # prices = train_data['keiyaku_pr'].values
-        #
-        # X_train, X_test, y_train, y_test = train_test_split(features, prices, test_size=0.2, random_state=42)
-
         # Tuning Parameters
         self.__n_folds = 3  # Cross-validation with k-folds
 
         # Models
-        self.__lasso = make_pipeline(RobustScaler(), Lasso(alpha=0.0005, random_state=1))
-        self.__ENet = make_pipeline(RobustScaler(), ElasticNet(alpha=0.0005, l1_ratio=.9, random_state=3))
-        self.__KRR = KernelRidge(alpha=0.6, kernel='polynomial', degree=2, coef0=2.5)
+        self.__lasso = make_pipeline(
+            RobustScaler(), Lasso(alpha=0.0005, random_state=1))
+        self.__ENet = make_pipeline(RobustScaler(), ElasticNet(
+            alpha=0.0005, l1_ratio=.9, random_state=3))
+        self.__KRR = KernelRidge(
+            alpha=0.6, kernel='polynomial', degree=2, coef0=2.5)
         self.__GBoost = GradientBoostingRegressor(n_estimators=3000, learning_rate=0.05,
                                                   max_depth=4, max_features='sqrt',
                                                   min_samples_leaf=15, min_samples_split=10,
@@ -77,23 +77,35 @@ class Trainer(object):
         :return:
         """
         score = self.rmsle_cv(self.__lasso)
-        print("\nLasso score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
+        print("\nLasso score: {:.4f} ({:.4f})\n".format(
+            score.mean(), score.std()))
         score = self.rmsle_cv(self.__ENet)
-        print("ElasticNet score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
+        print("ElasticNet score: {:.4f} ({:.4f})\n".format(
+            score.mean(), score.std()))
         score = self.rmsle_cv(self.__KRR)
-        print("Kernel Ridge score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
+        print("Kernel Ridge score: {:.4f} ({:.4f})\n".format(
+            score.mean(), score.std()))
         score = self.rmsle_cv(self.__GBoost)
-        print("Gradient Boosting score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
+        print("Gradient Boosting score: {:.4f} ({:.4f})\n".format(
+            score.mean(), score.std()))
         score = self.rmsle_cv(self.__model_xgb)
-        print("Xgboost score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
+        print("Xgboost score: {:.4f} ({:.4f})\n".format(
+            score.mean(), score.std()))
         # score = self.rmsle_cv(self.__model_lgb)
         # print("LGBM score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
 
-
-    def mean_absolute_percentage_error(self,y_true, y_pred):
+    def mean_absolute_percentage_error(self, y_true, y_pred):
         y_true, y_pred = np.array(y_true), np.array(y_pred)
         return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
+    def adaboost(self):
+        regr = AdaBoostRegressor(random_state=0, n_estimators=100)
+        regr.fit(self.__train,self.__y_train)
+        score = regr.score(self.__train,self.__y_train)
+        print(score)
+        return regr
+        
+    
     def fit_model(self):
         """
         モデルをフィットする
@@ -102,7 +114,10 @@ class Trainer(object):
         # model = self.train_model(self.__train, self.__y_train)
         test_size = 1/self.__n_folds
         # Split the training data into an extra set of test
-        x_train_split, x_test_split, y_train_split, y_test_split = train_test_split(self.__train, self.__y_train,test_size = test_size,random_state=0)
+        x_train_split, x_test_split, y_train_split, y_test_split = train_test_split(self.__train, 
+                                                                                    self.__y_train,
+                                                                                    test_size = test_size,
+                                                                                    random_state=0)
         print(np.shape(x_train_split), np.shape(x_test_split), np.shape(y_train_split), np.shape(y_test_split))
         lasso = LassoCV(alphas=[0.0001, 0.0003, 0.0006, 0.001, 0.003, 0.006, 0.01, 0.03, 0.06, 0.1,
                                 0.3, 0.6, 1],

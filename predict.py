@@ -35,21 +35,14 @@ class Predictor(object):
         :param predict_data:
         :return:
         """
-        write_data = []
-        for index, data in enumerate(predict_data):
-            test_id = 'test_{:04d}'.format(index)
-            try:
-                write_data.append([test_id, int(data)])
-            except:
-                print(index)
-                print(data)
-
+        submit = pd.read_csv("./Data/sample_submit.csv", header=None)
+        submit[1] = predict_data
+        print(submit[1])
         now = datetime.datetime.now()
-        now_str = '{}_{}_{}_{}_{}'.format(now.year, now.month, now.day, now.hour, now.minute)
-        submit_file = './Data/submit/submit_{}.tsv'.format(now_str)
-
-        write_data_df = pd.DataFrame(write_data)
-        write_data_df.to_csv(submit_file, sep='\t', index=False, header=False)
+        now_str = '{}_{}_{}_{}_{}'.format(
+            now.year, now.month, now.day, now.hour, now.minute)
+        submit_file = './Data/submit/submit_{}.csv'.format(now_str)
+        submit.to_csv(submit_file, header=None, index=None)
 
     @staticmethod
     def essemble_results(file1, file2):
@@ -62,10 +55,8 @@ class Predictor(object):
 
 
 if __name__ == '__main__':
-    predictor = Predictor();
-    predict_data = predictor.essemble_results('./Data/submit/submit_2019_8_11_23_28.tsv',
-                                              './Data/submit/submit_2019_8_11_23_33.tsv')
+    predictor = Predictor()
+    predict_data = predictor.essemble_results('./Data/submit/submit_2019_8_19_23_0.csv',
+                                              './Data/submit/submit_2019_8_20_23_11.csv')
 
     predictor.write_file_submit(predict_data)
-
-

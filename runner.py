@@ -1,5 +1,5 @@
 from preprocess import PreProcessor
-from nn_train import Trainer
+from train import Trainer
 from predict import Predictor
 import sys
 
@@ -24,7 +24,8 @@ class Runner(object):
         :return:
         """
         # create model
-        model = self.__trainer.fit_model()
+        # model = self.__trainer.fit_model()
+        model = self.__trainer.adaboost()
 
         # predict
         predict_data = self.__predictor.predict(model)
